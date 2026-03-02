@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<title>Bản đồ các cuộc cải cách lớn trong lịch sử Việt Nam</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<style>
+body { margin:0; font-family:'Segoe UI', sans-serif; overflow:hidden; background:#0f172a; }
+#map { height:100vh; width:100%; }
+
+/* ===== HEADER ===== */
+.header{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+background:linear-gradient(to right,#0f172a,#1e3a8a);
+color:white;
+padding:12px 20px;
+z-index:1000;
+font-size:20px;
+font-weight:bold;
+letter-spacing:1px;
+}
+
+/* ===== NÚT ===== */
+.compare-btn, .music-btn{
+position:absolute;
+top:70px;
+right:20px;
+background:#1e40af;
+color:white;
+padding:10px 15px;
+cursor:pointer;
+border-radius:8px;
+font-size:15px;
+z-index:1000;
+margin-bottom:10px;
+transition:0.3s;
+}
+.compare-btn:hover, .music-btn:hover{
+background:#2563eb;
+}
+
+.music-btn{ top:120px; }
+
+/* ===== PANEL SO SÁNH ===== */
+.compare-panel{
+position:absolute;
+top:0;
+right:-520px;
+width:520px;
+height:100%;
+background:white;
+padding:20px;
+overflow:auto;
+transition:0.5s;
+box-shadow:-3px 0 15px rgba(0,0,0,0.5);
+z-index:1500;
+}
+
+.compare-panel.open{ right:0; }
+
+table{ border-collapse:collapse; font-size:14px;}
+th,td{ border:1px solid #444; padding:6px; }
+
+/* ===== OVERLAY ===== */
+.overlay{
+position:fixed;
+top:0; left:0;
+width:100%; height:100%;
+display:none;
+justify-content:center;
+align-items:center;
+backdrop-filter:blur(8px);
+background-size:cover;
+background-position:center;
+z-index:2000;
+animation:fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn{
+from{opacity:0;}
+to{opacity:1;}
+}
+
+.info-box{
+width:65%;
+background:rgba(255,255,255,0.95);
+padding:30px;
+border-radius:20px;
+box-shadow:0 0 50px rgba(0,0,0,0.7);
+animation:zoomIn 0.4s ease;
+position:relative;
+}
+
+@keyframes zoomIn{
+from{transform:scale(0.7);opacity:0;}
+to{transform:scale(1);opacity:1;}
+}
+
+.close-btn{
+position:absolute;
+top:15px;
+right:20px;
+font-size:22px;
+cursor:pointer;
+}
+
+/* Tooltip */
+.leaflet-tooltip{
+font-weight:bold;
+font-size:13px;
+}
+</style>
+.island-label{
+color:#003366;
+font-weight:bold;
+font-size:11px;
+background:rgba(255,255,255,0.9);
+padding:2px 5px;
+border-radius:4px;
+border:1px solid #0044cc;
+white-space:nowrap;
+}
+</head>
+
+<body>
+
+<div class="header">
+BẢN ĐỒ CÁC CUỘC CẢI CÁCH LỚN TRONG LỊCH SỬ VIỆT NAM
+</div>
+
+<div id="map"></div>
+
+<div class="compare-btn" onclick="togglePanel()">➤ So sánh</div>
+<div class="music-btn" onclick="toggleMusic()">🎵 Bật / Tắt nhạc</div>
+
+<div class="compare-panel" id="panel">
+<h2>So sánh ba cuộc cải cách</h2>
+
+<table width="100%">
+<tr>
+<th>Tiêu chí</th>
+<th>Hồ Quý Ly</th>
+<th>Lê Thánh Tông</th>
+<th>Minh Mạng</th>
+</tr>
+
+<tr>
+<td>Bối cảnh</td>
+<td>Cuối thời Trần suy yếu, khủng hoảng kinh tế - xã hội</td>
+<td>Đất nước ổn định, nhà Lê sơ đang phát triển</td>
+<td>Triều Nguyễn cần củng cố quyền lực trung ương</td>
+</tr>
+
+<tr>
+<td>Mục tiêu</td>
+<td>Khắc phục khủng hoảng và tăng cường quyền lực nhà nước</td>
+<td>Xây dựng quốc gia hưng thịnh, pháp luật chặt chẽ</td>
+<td>Tăng cường quản lý hành chính và tập trung quyền lực</td>
+</tr>
+
+<tr>
+<td>Thành tựu</td>
+<td>Phát hành tiền giấy, hạn điền, cải cách thi cử</td>
+<td>Ban hành Bộ luật Hồng Đức, mở rộng lãnh thổ</td>
+<td>Chia cả nước thành 31 tỉnh, cải tổ bộ máy hành chính</td>
+</tr>
+
+<tr>
+<td>Hạn chế</td>
+<td>Thực hiện quá nhanh, không được lòng dân</td>
+<td>Phụ thuộc vào tài năng của vua</td>
+<td>Chính sách bảo thủ, hạn chế giao thương với phương Tây</td>
+</tr>
+
+<tr>
+<td>Kết quả</td>
+<td>Thất bại, dẫn đến sự xâm lược của nhà Minh (1407)</td>
+<td>Thời kỳ cực thịnh của Đại Việt</td>
+<td>Ổn định trong nước nhưng suy yếu trước sự xâm lược của Pháp</td>
+</tr>
+</table>
+
+<br>
+<p><b>Nhận xét chung:</b> Thành công của cải cách phụ thuộc vào lòng dân, sự ổn định chính trị và khả năng thích ứng với bối cảnh quốc tế.</p>
+
+</div>
+
+<div id="overlay" class="overlay">
+<div class="info-box">
+<span class="close-btn" onclick="closeOverlay()">✖</span>
+<h2 id="info-title"></h2>
+<div id="info-content"></div>
+</div>
+</div>
+
+<!-- Nhạc nền -->
+<audio id="bgMusic" loop>
+<source src="https://cdn.pixabay.com/audio/2022/03/15/audio_9e2fbb4a3d.mp3" type="audio/mpeg">
+</audio>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+var map=L.map('map').setView([16.2,107.5],6);
+var bounds=[[7.5,101.5],[23.8,111.0]];
+map.setMaxBounds(bounds);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+/* Tô màu Việt Nam */
+fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries/VNM.geo.json")
+.then(res=>res.json())
+.then(data=>{
+L.geoJSON(data,{
+style:{
+color:"#ff0000",
+weight:2,
+fillColor:"#38bdf8",
+fillOpacity:0.4
+}
+}).addTo(map);
+});
+
+/* Marker cải cách */
+function createReform(lat,lng,title,content,image,color){
+var marker=L.circleMarker([lat,lng],{
+radius:9,
+color:color,
+fillColor:color,
+fillOpacity:0.9
+}).addTo(map);
+
+marker.bindTooltip(title,{permanent:true,direction:"right"});
+
+marker.on("click",function(){
+document.getElementById("info-title").innerText=title;
+document.getElementById("info-content").innerHTML=content;
+document.getElementById("overlay").style.backgroundImage="url('"+image+"')";
+document.getElementById("overlay").style.display="flex";
+});
+}
+
+/* Dữ liệu */
+createReform(
+20.0,105.8,
+"Hồ Quý Ly (1397–1407)",
+"<p><b>Nội dung cải cách:</b> Phát hành tiền giấy, hạn điền, cải cách giáo dục và thi cử.</p><p><b>Kết quả:</b> Do không được lòng dân và thực hiện quá gấp gáp nên cải cách thất bại.</p>",
+"https://upload.wikimedia.org/wikipedia/commons/2/2c/Ho_Quy_Ly_statue.jpg",
+"red"
+);
+
+createReform(
+21.03,105.85,
+"Lê Thánh Tông (1460–1497)",
+"<p><b>Nội dung cải cách:</b> Ban hành Bộ luật Hồng Đức, cải tổ bộ máy nhà nước.</p><p><b>Kết quả:</b> Đưa Đại Việt đạt đến thời kỳ hưng thịnh nhất.</p>",
+"https://upload.wikimedia.org/wikipedia/commons/8/8c/Le_Thanh_Tong.jpg",
+"green"
+);
+
+createReform(
+16.47,107.58,
+"Minh Mạng (1820–1841)",
+"<p><b>Nội dung cải cách:</b> Chia cả nước thành 31 tỉnh, tăng cường quyền lực trung ương.</p><p><b>Kết quả:</b> Ổn định trong nước nhưng bảo thủ trong đối ngoại.</p>",
+"https://upload.wikimedia.org/wikipedia/commons/7/77/Minh_Mang.jpg",
+"purple"
+);
+/* =========================
+   HỆ THỐNG ĐẢO & QUẦN ĐẢO
+========================= */
+
+function createIsland(lat,lng,name,province,isMajor){
+
+var marker = L.circleMarker([lat,lng],{
+radius:6,
+color:"#0033cc",
+fillColor:"#00ccff",
+fillOpacity:1
+}).addTo(map);
+
+var label = L.marker([lat,lng],{
+icon: L.divIcon({
+className:'island-label',
+html:name,
+iconSize:[120,20],
+iconAnchor:[-10,10]
+})
+});
+
+/* Nếu là quần đảo lớn → luôn hiện */
+if(isMajor){
+label.addTo(map);
+}
+
+/* Nếu là đảo nhỏ → chỉ hiện khi zoom >= 9 */
+function updateLabel(){
+
+if(!isMajor){
+if(map.getZoom() >= 9){
+if(!map.hasLayer(label)){
+label.addTo(map);
+}
+}else{
+if(map.hasLayer(label)){
+map.removeLayer(label);
+}
+}
+}
+}
+
+map.on("zoomend",updateLabel);
+
+marker.bindPopup("<b>"+name+"</b><br>Thuộc: "+province);
+}
+
+/* ===== QUẦN ĐẢO HOÀNG SA ===== */
+createIsland(16.5,112.0,"Quần đảo Hoàng Sa","TP Đà Nẵng",true);
+createIsland(16.6,111.8,"Đảo Phú Lâm","Thành phố Đà Nẵng");
+createIsland(16.3,112.3,"Đảo Linh Côn","Thành phố Đà Nẵng");
+createIsland(16.4,112.1,"Đảo Quang Ảnh","Thành phố Đà Nẵng");
+
+/* ===== QUẦN ĐẢO TRƯỜNG SA ===== */
+createIsland(10.2,114.0,"Quần đảo Trường Sa","Tỉnh Khánh Hòa",true);
+createIsland(9.8,114.2,"Đảo Trường Sa Lớn","Tỉnh Khánh Hòa");
+createIsland(10.1,114.5,"Đảo Song Tử Tây","Tỉnh Khánh Hòa");
+createIsland(10.2,114.4,"Đảo Song Tử Đông","Tỉnh Khánh Hòa");
+createIsland(9.7,113.8,"Đảo Nam Yết","Tỉnh Khánh Hòa");
+createIsland(9.6,114.3,"Đảo Sinh Tồn","Tỉnh Khánh Hòa");
+createIsland(9.4,114.1,"Đảo An Bang","Tỉnh Khánh Hòa");
+
+/* ===== CÁC ĐẢO LỚN KHÁC ===== */
+createIsland(10.3,103.9,"Phú Quốc","Tỉnh Kiên Giang",false);
+createIsland(9.3,103.4,"Đảo Thổ Chu","Tỉnh Kiên Giang");
+createIsland(8.6,106.6,"Côn Đảo","Tỉnh Bà Rịa - Vũng Tàu",false);
+createIsland(9.9,109.1,"Phú Quý","Tỉnh Bình Thuận",false);
+createIsland(15.4,109.1,"Đảo Lý Sơn","Tỉnh Quảng Ngãi");
+createIsland(21.0,107.3,"Đảo Bạch Long Vĩ","Thành phố Hải Phòng");
+createIsland(20.7,107.0,"Đảo Cát Bà","Thành phố Hải Phòng");
+createIsland(21.05,107.8,"Đảo Cô Tô","Tỉnh Quảng Ninh");
+createIsland(16.1,108.3,"Cù Lao Chàm","Tỉnh Quảng Nam");
+createIsland(12.65,109.35,"Hòn Tre","Tỉnh Khánh Hòa");
+/* Nhạc */
+function toggleMusic(){
+var music=document.getElementById("bgMusic");
+if(music.paused){
+music.play();
+}else{
+music.pause();
+}
+}
+
+function togglePanel(){
+document.getElementById("panel").classList.toggle("open");
+}
+
+function closeOverlay(){
+document.getElementById("overlay").style.display="none";
+}
+</script>
+
+</body>
+</html>
