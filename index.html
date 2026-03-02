@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bản đồ cải cách Việt Nam - THPT NGÔ QUYỀN</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:'Segoe UI';background:#f5f5f5}
+#map{height:100%;width:100%}
+.control-panel{position:absolute;top:15px;left:15px;z-index:1000;background:white;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.2);min-width:320px;max-width:450px;font-size:14px}
+.panel-header{background:linear-gradient(135deg,#1976d2,#42a5f5);color:white;padding:16px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;cursor:pointer;animation:gradientMove 6s infinite alternate}
+@keyframes gradientMove{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(20deg)}}
+.panel-content{padding:16px;display:none;max-height:600px;overflow-y:auto}
+.panel-content.active{display:block}
+.filter-btn{padding:8px 14px;border:2px solid #ddd;background:white;border-radius:20px;cursor:pointer;font-size:13px;margin:3px}
+.filter-btn.active{background:#1976d2;color:white;border-color:#1976d2}
+.legend-color{width:16px;height:16px;border-radius:50%}
+.island-label{font-size:12px;font-weight:bold;color:#fbc02d;text-shadow:0 0 3px white}
+.leaflet-interactive{transition:all 0.3s ease}
+.leaflet-interactive:hover{transform:scale(1.3);filter:drop-shadow(0 0 6px gold)}
+.glow-island{animation:islandGlow 1.5s infinite alternate}
+@keyframes islandGlow{0%{filter:drop-shadow(0 0 3px gold)}100%{filter:drop-shadow(0 0 12px orange)}}
+.leaflet-popup-content{animation:fadeIn 0.3s ease}
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(10px)}
+to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="control-panel">
+<div class="panel-header" onclick="togglePanel()">
+<h3>📊 Cải cách Việt Nam - THPT NGÔ QUYỀN</h3>
+<span>▼</span>
+</div>
+<div class="panel-content" id="panelContent">
+<div>
+<button class="filter-btn active" onclick="filterByPeriod('all',event)">Tất cả</button>
+<button class="filter-btn" onclick="filterByPeriod('hoqly',event)">Hồ Quý Ly</button>
+<button class="filter-btn" onclick="filterByPeriod('lethanh',event)">Lê Thánh Tông</button>
+<button class="filter-btn" onclick="filterByPeriod('minhmang',event)">Minh Mạng</button>
+<button class="filter-btn" onclick="filterByPeriod('island',event)">Quần đảo</button>
+</div>
+<table border="1" style="margin-top:10px;width:100%">
+<tr><th>Nhân vật</th><th>Thời kỳ</th><th>Kết quả</th></tr>
+<tr><td style="color:#e53935"><b>Hồ Quý Ly</b></td><td>1397–1407</td><td>Thất bại</td></tr>
+<tr><td style="color:#43a047"><b>Lê Thánh Tông</b></td><td>1460–1497</td><td>Thành công nhất</td></tr>
+<tr><td style="color:#1e88e5"><b>Minh Mạng</b></td><td>1820–1841</td><td>Củng cố nhà nước</td></tr>
+</table>
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+var map=L.map('map').setView([16.2,107.8],6);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+
+fetch("https://raw.githubusercontent.com/deldersveld/topojson/master/countries/vietnam/vietnam-provinces.json")
+.then(res=>res.json())
+.then(data=>{
+L.geoJSON(data,{style:{color:"#d32f2f",weight:2,fillOpacity:0.1}}).addTo(map);
+});
+
+var markers=[
+{coords:[20.078,105.604],period:'hoqly',color:'#e53935',content:'<b>Hồ Quý Ly</b><br>1397–1407<br>Cải cách mạnh nhưng thất bại 1407'},
+{coords:[21.028,105.834],period:'lethanh',color:'#43a047',content:'<b>Lê Thánh Tông</b><br>1460–1497<br>Thời kỳ thịnh trị nhất'},
+{coords:[16.4637,107.5909],period:'minhmang',color:'#1e88e5',content:'<b>Minh Mạng</b><br>1820–1841<br>Hoàn thiện bộ máy nhà nước'},
+
+{coords:[16.5,112.0],period:'island',color:'#fbc02d',title:'Quần đảo Hoàng Sa',content:'<b>Quần đảo Hoàng Sa</b><br>Lãnh thổ Việt Nam'},
+{coords:[9.5,114.0],period:'island',color:'#fbc02d',title:'Quần đảo Trường Sa',content:'<b>Quần đảo Trường Sa</b><br>Lãnh thổ Việt Nam'},
+
+{coords:[10.289,103.984],period:'island',color:'#fbc02d',title:'Phú Quốc'},
+{coords:[8.682,106.608],period:'island',color:'#fbc02d',title:'Côn Đảo'},
+{coords:[15.38,109.12],period:'island',color:'#fbc02d',title:'Lý Sơn'},
+{coords:[21.03,107.77],period:'island',color:'#fbc02d',title:'Cô Tô'},
+{coords:[20.13,107.72],period:'island',color:'#fbc02d',title:'Bạch Long Vĩ'}
+];
+
+var markerObjects=[];
+markers.forEach(function(m){
+var marker=L.circleMarker(m.coords,{radius:7,color:m.color,fillColor:m.color,fillOpacity:0.9}).addTo(map);
+if(m.period==='island'){marker.getElement()?.classList.add('glow-island');}
+if(m.content){marker.bindPopup(m.content);}else{marker.bindTooltip(m.title,{permanent:true,className:"island-label"});}
+marker.period=m.period;
+markerObjects.push(marker);
+});
+
+function filterByPeriod(period,e){
+document.querySelectorAll('.filter-btn').forEach(btn=>btn.classList.remove('active'));
+e.target.classList.add('active');
+markerObjects.forEach(function(marker){
+if(period==='all'||marker.period===period){
+marker.setOpacity(1);
+}else{
+marker.setOpacity(0.2);
+}
+});
+}
+
+function togglePanel(){
+document.getElementById('panelContent').classList.toggle('active');
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+document.getElementById('panelContent').classList.add('active');
+});
+</script>
+
+</body>
+</html>
