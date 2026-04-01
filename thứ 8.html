@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<title>Bản đồ cải cách Việt Nam</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<style>
+body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #333; }
+#map { height: 100vh; }
+
+.header {
+    position: absolute; top: 0; width: 100%;
+    background: #1e3a8a; color: white;
+    padding: 15px; text-align: center;
+    z-index: 1000; font-weight: bold; font-size: 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+/* NÚT ĐIỀU KHIỂN */
+.btn-control {
+    position: absolute; right: 20px;
+    color: white; padding: 10px 15px; border-radius: 8px;
+    cursor: pointer; z-index: 1000; font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    transition: 0.3s;
+}
+.btn-control:hover { transform: translateY(-2px); }
+
+#btnCompare { top: 70px; background: #2563eb; }
+#btnGame { top: 120px; background: #10b981; }
+
+/* PANEL SO SÁNH */
+.compare-panel {
+    position: absolute; top: 0; right: -550px;
+    width: 500px; height: 100%;
+    background: white; padding: 25px;
+    overflow-y: auto; transition: 0.4s ease;
+    z-index: 1500; box-shadow: -5px 0 15px rgba(0,0,0,0.2);
+}
+.compare-panel.open { right: 0; }
+
+.close-panel {
+    position: absolute; top: 15px; right: 20px;
+    cursor: pointer; font-size: 24px; color: #ef4444; font-weight: bold;
+}
+
+/* BẢNG SO SÁNH */
+table { 
+    border-collapse: collapse; 
+    width: 100%; 
+    margin-top: 15px;
+    border: 2px solid #1e293b;
+}
+th, td { 
+    border: 1px solid #475569; 
+    padding: 10px; 
+    font-size: 13px; 
+    text-align: left;
+    vertical-align: top;
+}
+th { background: #e2e8f0; color: #0f172a; font-weight: bold; }
+tr:nth-child(even) { background: #f8fafc; }
+
+/* OVERLAY KHUNG THÔNG TIN & GAME */
+.overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none; justify-content: center; align-items: center;
+    background: rgba(0,0,0,0.75); z-index: 2000;
+}
+
+.box {
+    background: white; padding: 25px;
+    border-radius: 12px; width: 90%; max-width: 450px;
+    max-height: 80vh; overflow-y: auto;
+    position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.close-btn {
+    position: absolute; top: 15px; right: 20px;
+    cursor: pointer; font-size: 24px; color: #ef4444; font-weight: bold;
+}
+
+/* GAME Ô CHỮ */
+.box h3 { margin-top: 0; color: #1e3a8a; }
+.box p { font-size: 14px; margin: 10px 0 5px 0; }
+.box input { 
+    width: 100%; padding: 8px; box-sizing: border-box; 
+    border: 1px solid #cbd5e1; border-radius: 5px; 
+    text-transform: uppercase;
+}
+.box button {
+    margin-top: 15px; padding: 10px 20px; 
+    background: #10b981; color: white; border: none; 
+    border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;
+}
+#score { margin-top: 15px; font-size: 14px; line-height: 1.5; }
+
+/* =================================================== */
+/* HIỆU ỨNG VIỀN SÁNG NEON CHO VIỆT NAM (MỚI THÊM) */
+/* HIỆU ỨNG VIỀN SÁNG VÀ CHUYỂN MÀU LÃNH THỔ */
+.vietnam-glow {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    animation: neon-pulse 3s infinite alternate ease-in-out, 
+               color-breath 5s infinite alternate ease-in-out;
+}
+
+@keyframes neon-pulse {
+    from { filter: drop-shadow(0 0 2px #00ffff); }
+    to { filter: drop-shadow(0 0 12px #00ffff) drop-shadow(0 0 5px #ffffff); }
+}
+
+/* Animation chuyển màu lãnh thổ từ tối sang sáng */
+@keyframes color-breath {
+    0% {
+        fill-opacity: 0.05;
+        fill: #004444;
+        stroke: #00cccc;
+    }
+    100% {
+        fill-opacity: 0.3;
+        fill: #00ffff;
+        stroke: #ffffff;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">BẢN ĐỒ CẢI CÁCH VIỆT NAM</div>
+
+<div id="map"></div>
+
+<div class="btn-control" id="btnCompare">📊 So sánh</div>
+<div class="btn-control" id="btnGame">🎮 Trò chơi</div>
+
+<div class="compare-panel" id="panel">
+    <span class="close-panel" id="closePanel">✖</span>
+    <h3>So sánh 3 cuộc cải cách</h3>
+
+    <table>
+        <tr>
+            <th>Tiêu chí</th>
+            <th>Hồ Quý Ly</th>
+            <th>Lê Thánh Tông</th>
+            <th>Minh Mạng</th>
+        </tr>
+        <tr>
+            <td>Bối cảnh</td>
+            <td>Khủng hoảng cuối Trần, xã hội rối ren, quan lại sa đọa, nông dân nổi dậy.</td>
+            <td>Đất nước ổn định nhưng bộ máy hành chính còn bất cập, quyền lực phân tán.</td>
+            <td>Bộ máy hành chính thời Gia Long còn giữ nhiều dấu vết cũ, chưa thật thống nhất.</td>
+        </tr>
+        <tr>
+            <td>Mục tiêu</td>
+            <td>Cứu vãn khủng hoảng, củng cố triều đình, tăng quyền lực trung ương, chuẩn bị chống ngoại xâm.</td>
+            <td>Xây dựng nhà nước quân chủ tập quyền mạnh, khắc phục lộng quyền và cát cứ.</td>
+            <td>Hoàn chỉnh mô hình quân chủ tập quyền, thống nhất quản lý cả nước.</td>
+        </tr>
+        <tr>
+            <td>Thành tựu</td>
+            <td>Cải cách rộng trên nhiều lĩnh vực; hạn điền, hạn nô, tiền giấy, chữ Nôm, quân sự.</td>
+            <td>Tổ chức nhà nước quy củ; Luật Hồng Đức; quân đội chặt chẽ; giáo dục phát triển; kinh tế có nền tảng.</td>
+            <td>Thiết lập hệ thống cơ quan mới; chia cả nước thành tỉnh; hành chính thống nhất, chặt chẽ.</td>
+        </tr>
+        <tr>
+            <td>Hạn chế</td>
+            <td>Chưa triệt để, thiếu lòng dân, khó tạo đoàn kết chống giặc.</td>
+            <td>Tập quyền mạnh nhưng vẫn dựa nhiều vào mô hình Nho giáo, kỷ cương rất chặt.</td>
+            <td>Tập quyền cao, nhưng mô hình quản lý mang tính bảo thủ, kiểm soát chặt.</td>
+        </tr>
+        <tr>
+            <td>Kết quả</td>
+            <td>Có tác động ban đầu nhưng triều Hồ không giữ được lâu.</td>
+            <td>Đưa thời Lê sơ vào giai đoạn phát triển vững mạnh, hưng thịnh.</td>
+            <td>Hoàn thành thống nhất hành chính và để lại di sản chia tỉnh còn ảnh hưởng lâu dài.</td>
+        </tr>
+    </table>
+
+    <br>
+    <b>Nhận xét:</b><br>
+    - Lê Thánh Tông: thành công nhất, đưa đất nước phát triển mạnh.<br>
+    - Hồ Quý Ly: cải cách tiến bộ nhưng thất bại do thiếu lòng dân.<br>
+    - Minh Mạng: hoàn thiện bộ máy nhưng bảo thủ.<br>
+</div>
+
+<div id="overlay" class="overlay">
+    <div class="box">
+        <span class="close-btn" id="closeOverlay">✖</span>
+        <h3 id="title"></h3>
+        <div id="content"></div>
+    </div>
+</div>
+
+<div id="game" class="overlay">
+    <div class="box">
+        <span class="close-btn" id="closeGame">✖</span>
+        <h3>🎮 Trò chơi ô chữ lịch sử</h3>
+        <p><b>Điền đáp án (VIẾT HOA KHÔNG DẤU)</b></p>
+
+        <p><b>Câu 1:</b> Người tiến hành cải cách trong bối cảnh cuối thời Trần xã hội rối ren, quan lại sa đọa.</p>
+        <input id="q1">
+
+        <p><b>Câu 2:</b> Vị vua đưa thời Lê sơ bước vào giai đoạn phát triển vững mạnh và hưng thịnh nhất.</p>
+        <input id="q2">
+
+        <p><b>Câu 3:</b> Vị vua đã hoàn thành công cuộc thống nhất hành chính trên phạm vi cả nước.</p>
+        <input id="q3">
+
+        <p><b>Câu 4:</b> Loại tiền tệ mới lạ được Hồ Quý Ly cho phát hành thay thế cho tiền đồng.</p>
+        <input id="q4">
+
+        <p><b>Câu 5:</b> Tên bộ luật tiêu biểu, đồ sộ được hoàn thiện dưới thời vua Lê Thánh Tông.</p>
+        <input id="q5">
+
+        <p><b>Câu 6:</b> Loại chữ viết dân tộc được Hồ Quý Ly đề cao và đưa vào thi cử, hành chính.</p>
+        <input id="q6">
+
+        <p><b>Câu 7:</b> Chính sách nhằm hạn chế diện tích sở hữu ruộng đất tư nhân của vương hầu, quý tộc thời Hồ.</p>
+        <input id="q7">
+
+        <p><b>Câu 8:</b> Đơn vị hành chính cấp địa phương cao nhất do vua Minh Mạng thành lập, vẫn còn dùng đến ngày nay.</p>
+        <input id="q8">
+
+        <p><b>Câu 9:</b> Hệ tư tưởng được vua Lê Thánh Tông dùng làm điểm tựa vững chắc để xây dựng bộ máy kỷ cương.</p>
+        <input id="q9">
+
+        <p><b>Câu 10:</b> Yếu tố quan trọng mà triều Hồ bị thiếu khiến họ không thể tạo nên khối đoàn kết chống giặc.</p>
+        <input id="q10">
+
+        <button onclick="checkGame()">✅ Kiểm tra kết quả</button>
+
+        <p id="score"></p>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+// ===== 1. KHỞI TẠO BẢN ĐỒ =====
+var map = L.map('map', {
+    maxBounds: [[4, 98], [26, 118]],
+    minZoom: 5
+}).setView([16.0, 108.0], 6);
+
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri',
+    maxZoom: 12
+}).addTo(map);
+
+// Vẽ viền Việt Nam (ĐÃ ĐƯỢC THAY ĐỔI STYLE ĐỂ PHÁT SÁNG)
+fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries/VNM.geo.json")
+.then(res => res.json())
+.then(data => {
+    L.geoJSON(data, {
+        style: { 
+            color: "#ffffff", // Sợi chỉ lõi màu trắng sáng
+            weight: 2.5, 
+            fillColor: "#00ffff", 
+            fillOpacity: 0.08, // Tạo một lớp phủ nhẹ bên trong lãnh thổ
+            className: "vietnam-glow" // Gọi class CSS để phát sáng
+        }
+    }).addTo(map);
+});
+
+
+// ===== 2. HÀM HIỂN THỊ THÔNG TIN =====
+var overlay = document.getElementById("overlay");
+var titleEl = document.getElementById("title");
+var contentEl = document.getElementById("content");
+
+function show(title, content) {
+    titleEl.innerText = title;
+    contentEl.innerHTML = content;
+    overlay.style.display = "flex";
+}
+
+document.getElementById("closeOverlay").onclick = function() {
+    overlay.style.display = "none";
+};
+
+overlay.onclick = function(e) {
+    if (e.target === overlay) overlay.style.display = "none";
+};
+
+
+// ===== 3. THÊM ĐỊA ĐIỂM (MARKERS) =====
+function addMarker(lat, lng, title, content) {
+    var m = L.marker([lat, lng]).addTo(map);
+    m.on("click", function(e) {
+        L.DomEvent.stopPropagation(e);
+        map.flyTo([lat, lng], 8, { duration: 1.5 });
+        show(title, content);
+    });
+}
+
+// 3 Cuộc cải cách
+addMarker(20.0, 105.8, "CẢI CÁCH HỒ QUÝ LY",
+    "<b>Nguyên nhân:</b> Khủng hoảng cuối Trần<br><b>Kết quả:</b> Thất bại nhanh<br><b>Ý nghĩa:</b> Cải cách đầu tiên");
+
+addMarker(21.03, 105.85, "CẢI CÁCH LÊ THÁNH TÔNG",
+    "<b>Nguyên nhân:</b> Xây dựng nhà nước mạnh<br><b>Kết quả:</b> Hưng thịnh<br><b>Ý nghĩa:</b> Đỉnh cao phong kiến");
+
+addMarker(16.47, 107.58, "CẢI CÁCH MINH MẠNG",
+    "<b>Nguyên nhân:</b> Thống nhất quản lý<br><b>Kết quả:</b> Bộ máy hoàn chỉnh<br><b>Ý nghĩa:</b> Hoàn thiện nhà nước");
+
+// Quần đảo Hoàng Sa
+var hoangSa = L.marker([16.5, 112.5]).addTo(map);
+hoangSa.on("click", function(e) {
+    L.DomEvent.stopPropagation(e);
+    map.flyTo([16.5, 112.5], 7, { duration: 1.5 });
+    show("QUẦN ĐẢO HOÀNG SA", 
+        "<b>Thuộc:</b> Thành phố Đà Nẵng<br><br>- Gồm khoảng 30 đảo, đá, bãi cạn.<br>- Vị trí chiến lược quan trọng.<br><br><b>Giá trị:</b> Ngư trường lớn, tiềm năng dầu khí.<br><b>Chủ quyền:</b> Việt Nam");
+});
+
+// Quần đảo Trường Sa
+var truongSa = L.marker([10.5, 114.0]).addTo(map);
+truongSa.on("click", function(e) {
+    L.DomEvent.stopPropagation(e);
+    map.flyTo([10.5, 114.0], 7, { duration: 1.5 });
+    show("QUẦN ĐẢO TRƯỜNG SA", 
+        "<b>Thuộc:</b> Tỉnh Khánh Hòa<br><br>- Gồm hơn 100 đảo và bãi san hô phong phú.<br><br><b>Giá trị:</b> Tuyến hàng hải quốc tế huyết mạch, quốc phòng quan trọng.<br><b>Chủ quyền:</b> Việt Nam");
+});
+
+
+// ===== 4. ĐIỀU KHIỂN PANEL SO SÁNH =====
+var panel = document.getElementById("panel");
+document.getElementById("btnCompare").onclick = function() {
+    panel.classList.toggle("open");
+};
+document.getElementById("closePanel").onclick = function() {
+    panel.classList.remove("open");
+};
+
+
+// ===== 5. TRÒ CHƠI Ô CHỮ =====
+var gameOverlay = document.getElementById("game");
+
+document.getElementById("btnGame").onclick = function() {
+    gameOverlay.style.display = "flex";
+};
+
+document.getElementById("closeGame").onclick = function() {
+    gameOverlay.style.display = "none";
+};
+
+gameOverlay.onclick = function(e) {
+    if (e.target === gameOverlay) gameOverlay.style.display = "none";
+};
+
+function normalize(s) {
+    return s.trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function checkGame() {
+    let answers = [
+        "HOQUYLY", "LETHANHTONG", "MINHMANG", "TIENGIAY", "LUATHONGDUC",
+        "CHUNOM", "HANDIEN", "TINH", "NHOGIAO", "LONGDAN"
+    ];
+
+    let score = 0;
+    let result = "";
+
+    for (let i = 0; i < answers.length; i++) {
+        let inputVal = document.getElementById("q" + (i + 1)).value;
+        if (normalize(inputVal) === answers[i]) {
+            score++;
+            result += "Câu " + (i + 1) + ": ✅ Đúng<br>";
+        } else {
+            result += "Câu " + (i + 1) + ": ❌ Sai (Đáp án: " + answers[i] + ")<br>";
+        }
+    }
+
+    document.getElementById("score").innerHTML = "<b>Tổng điểm: " + score + "/10</b><br><br>" + result;
+}
+</script>
+
+</body>
+</html>
